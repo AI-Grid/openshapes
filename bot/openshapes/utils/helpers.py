@@ -442,8 +442,28 @@ class LorebookManager:
         
     def _load_lorebook(self) -> None:
         if os.path.exists(self.lorebook_path):
-            with open(self.lorebook_path, "r", encoding="utf-8") as f:
-                self.lorebook_entries = json.load(f)
+            try:
+                with open(self.lorebook_path, "r", encoding="utf-8") as f:
+                    loaded_data = json.load(f)
+                    
+                    # Convert data to expected format if necessary
+                    self.lorebook_entries = []
+                    
+                    # Check if the loaded data is a list of dicts
+                    if isinstance(loaded_data, list):
+                        for entry in loaded_data:
+                            if isinstance(entry, dict) and "keyword" in entry and "content" in entry:
+                                self.lorebook_entries.append(entry)
+                            elif isinstance(entry, dict) and len(entry) == 1:
+                                keyword, content = next(iter(entry.items()))
+                                self.lorebook_entries.append({"keyword": keyword, "content": content})
+                    logger.info(f"Loaded {len(self.lorebook_entries)} lorebook entries")
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing lorebook JSON: {e}")
+                self.lorebook_entries = []
+            except Exception as e:
+                logger.error(f"Error loading lorebook: {e}")
+                self.lorebook_entries = []
         else:
             self.lorebook_entries = []
             self._save_lorebook()
@@ -458,6 +478,18 @@ class LorebookManager:
         self._save_lorebook()
         logger.info(f"Added lorebook entry for keyword: {keyword}")
         
+    def get_entries(self) -> List[Dict[str, str]]:
+        return self.lorebook_entries
+
+    def update_entry(self, index: int, keyword: str, content: str) -> bool:
+        if 0 <= index < len(self.lorebook_entries):
+            entry = LorebookEntry(keyword, content)
+            self.lorebook_entries[index] = entry.to_dict()
+            self._save_lorebook()
+            logger.info(f"Updated lorebook entry for keyword: {keyword}")
+            return True
+        return False
+            
     def remove_entry(self, index: int) -> bool:
         if 0 <= index < len(self.lorebook_entries):
             entry = self.lorebook_entries.pop(index)
