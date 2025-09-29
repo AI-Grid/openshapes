@@ -1,5 +1,53 @@
 # OpenShapes
 
+## Recent Enhancements
+
+- **Flask Management Server**: Added a Flask 3 web panel with authentication, dashboards, and CRUD tools for admins, agents, and subjects, including quota tracking and configuration editing.
+- **Multi-Agent Runtime**: Implemented process management utilities with Discord bot integration, vector memory per agent, and launcher scripts driven by `.ini` definitions.
+- **OpenAI-Compatible APIs**: Exposed `/v1/chat/completions` and `/v1/images/generations` endpoints with per-subject HMAC validation, token usage accounting, and configurable API credentials.
+- **Data & Tooling**: Introduced SQLAlchemy 2 models, SQLite migrations, configuration helpers, bootstrap scripts, and minimal Jinja templates to support the new management workflow.
+
+
+## Running the Stack
+
+1. **Create and activate a Python environment.**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+
+2. **Install runtime dependencies.**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Configure application secrets and database encryption.**
+   * Edit `config/app.ini` and set:
+     * `flask.secret_key` to a long random string.
+     * `database.url` to the location for your SQLCipher-backed SQLite database (for example, `sqlite:///data/openshapes.db`).
+     * `database.encryption_key` to a strong passphrase. This key unlocks the encrypted database—store it securely and keep backups.
+   * The stack relies on SQLCipher for encryption via the `sqlcipher3-binary` wheel. Ensure the package is installed (see `requirements.txt`).
+
+4. **Bootstrap the first superadmin account.**
+   ```bash
+   scripts/create_admin.sh <username> <password> [discord_user_id]
+   ```
+
+5. **Start the management server and OpenAI-compatible APIs.**
+   ```bash
+   ./run.sh
+   ```
+   Visit `http://localhost:5000` to sign in with the credentials from the previous step.
+
+6. **(Optional) Launch background agents/Discord bots.**
+   * Populate `config/launcher.ini` with agent definitions (ID, display name, vector store path, Discord bot token).
+   * Run `python launcher.py` to spawn the configured agents. Press `Ctrl+C` to stop them.
+
+7. **Call the APIs securely.**
+   * Create Subjects in the web panel to generate opaque IDs and HMAC secrets.
+   * Include `X-Subject-ID` and `X-Signature` headers when calling `/v1/chat/completions` and `/v1/images/generations`. Only bot responses and usage counters are persisted; user prompts are never stored.
+
+
 ## An Open-Source Alternative to AI Characters
 
 Welcome to OpenShapes, a community-driven, open-source alternative to the proprietary AI character platform shapes.inc. OpenShapes empowers you with full control over your AI companions through self-hosting or our upcoming managed service.

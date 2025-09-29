@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Memory for {{ agent.name }}</h2>
+  {% if memories %}
+  <ul>
+    {% for entry in memories %}
+    <li>{{ entry.text }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No memory entries yet.</p>
+  {% endif %}
+  <a role="button" class="secondary" href="{{ url_for('agents_view') }}">Back</a>
+</section>
+{% endblock %}

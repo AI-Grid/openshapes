@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>OpenShapes Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>OpenShapes Manager</h1>
+        {% if current_user.is_authenticated %}
+        <nav>
+          <ul>
+            <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li><a href="{{ url_for('agents_view') }}">Agents</a></li>
+            <li><a href="{{ url_for('subjects_view') }}">Subjects</a></li>
+            <li><a href="{{ url_for('users_view') }}">Users</a></li>
+            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+          </ul>
+        </nav>
+        {% endif %}
+      </header>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <section>
+            {% for category, message in messages %}
+              <article class="{{ category }}">{{ message }}</article>
+            {% endfor %}
+          </section>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>{{ 'Edit' if user else 'New' }} User</h2>
+  <form method="post">
+    <label>Username
+      <input type="text" name="username" value="{{ user.username if user else '' }}" required>
+    </label>
+    <label>Password {% if user %}<small>(leave blank to keep existing)</small>{% endif %}
+      <input type="password" name="password" {% if not user %}required{% endif %}>
+    </label>
+    <label>Discord ID
+      <input type="text" name="discord_id" value="{{ user.discord_id if user else '' }}">
+    </label>
+    <label>
+      <input type="checkbox" name="is_superadmin" {% if user and user.is_superadmin %}checked{% endif %}>
+      Superadmin
+    </label>
+    {% if user %}
+    <label>
+      <input type="checkbox" name="is_active" {% if user.is_active %}checked{% endif %}>
+      Active
+    </label>
+    {% endif %}
+    <button type="submit">Save</button>
+    <a role="button" class="secondary" href="{{ url_for('users_view') }}">Cancel</a>
+  </form>
+</section>
+{% endblock %}
