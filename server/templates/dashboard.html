@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Usage Overview</h2>
+  <div class="grid">
+    <article>
+      <h3>Users</h3>
+      <p>{{ users }}</p>
+    </article>
+    <article>
+      <h3>Subjects</h3>
+      <p>{{ subjects }}</p>
+    </article>
+    <article>
+      <h3>Tokens Used</h3>
+      <p>{{ totals.tokens }}</p>
+    </article>
+    <article>
+      <h3>Images Generated</h3>
+      <p>{{ totals.images }}</p>
+    </article>
+  </div>
+</section>
+<section>
+  <h2>Agents</h2>
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Model</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for agent in agents %}
+      <tr>
+        <td>{{ agent.name }}</td>
+        <td>{{ agent.model }}</td>
+        <td>{{ statuses[agent.id] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% if current_user.is_superadmin %}
+<section>
+  <h2>Configuration</h2>
+  <form method="post" action="{{ url_for('save_config') }}">
+    <textarea name="config_text" rows="12">{{ config_text }}</textarea>
+    <button type="submit">Save config</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}
