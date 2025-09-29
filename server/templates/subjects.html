@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <header class="grid">
+    <div><h2>Subjects</h2></div>
+    <div class="align-right"><a role="button" href="{{ url_for('subject_create') }}">New subject</a></div>
+  </header>
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Opaque ID</th><th>Active</th><th>Token Limit</th><th>Image Limit</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for subject in subjects %}
+      <tr>
+        <td>{{ subject.name }}</td>
+        <td><code>{{ subject.opaque_id }}</code></td>
+        <td>{{ 'Yes' if subject.is_active else 'No' }}</td>
+        <td>{{ subject.limits.monthly_token_limit if subject.limits else '—' }}</td>
+        <td>{{ subject.limits.monthly_image_limit if subject.limits else '—' }}</td>
+        <td>
+          <a href="{{ url_for('subject_edit', subject_id=subject.id) }}">Edit</a>
+          <form method="post" action="{{ url_for('subject_delete', subject_id=subject.id) }}" style="display:inline" onclick="return confirm('Delete subject?')">
+            <button type="submit" class="secondary">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

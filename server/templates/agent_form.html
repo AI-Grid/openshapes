@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>{{ 'Edit' if agent else 'New' }} Agent</h2>
+  <form method="post">
+    <label>Name
+      <input type="text" name="name" value="{{ agent.name if agent else '' }}" required>
+    </label>
+    <label>Description
+      <textarea name="description" rows="3">{{ agent.description if agent else '' }}</textarea>
+    </label>
+    <label>Base URL
+      <input type="text" name="base_url" value="{{ agent.base_url if agent else '' }}" placeholder="https://api.openai.com/v1">
+    </label>
+    <label>Model
+      <input type="text" name="model" value="{{ agent.model if agent else '' }}" placeholder="gpt-3.5-turbo">
+    </label>
+    <label>API key
+      <input type="text" name="api_key" value="{{ agent.api_key if agent else '' }}">
+    </label>
+    <label>Discord token
+      <input type="text" name="discord_token" value="{% if agent and agent.config %}{{ agent.config['discord_token'] if 'discord_token' in agent.config and agent.config['discord_token'] else '' }}{% endif %}">
+    </label>
+    <label>Vector path
+      <input type="text" name="vector_path" value="{{ agent.vector_path if agent else '' }}" placeholder="data/memory/agent.json">
+    </label>
+    <label>Instructions
+      <textarea name="instructions" rows="4">{% if agent and agent.config %}{{ agent.config['instructions'] if 'instructions' in agent.config else '' }}{% endif %}</textarea>
+    </label>
+    <button type="submit">Save</button>
+    <a role="button" class="secondary" href="{{ url_for('agents_view') }}">Cancel</a>
+  </form>
+</section>
+{% endblock %}

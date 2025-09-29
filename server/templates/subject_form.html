@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>{{ 'Edit' if subject else 'New' }} Subject</h2>
+  <form method="post">
+    <label>Name
+      <input type="text" name="name" value="{{ subject.name if subject else '' }}" required>
+    </label>
+    <label>Opaque ID
+      <input type="text" name="opaque_id" value="{{ subject.opaque_id if subject else '' }}" required>
+    </label>
+    <label>HMAC Secret
+      <input type="text" name="hmac_secret" value="{{ subject.hmac_secret if subject else '' }}" {% if not subject %}placeholder="auto generated"{% endif %}>
+    </label>
+    <label>Monthly Token Limit
+      <input type="number" name="monthly_token_limit" value="{{ subject.limits.monthly_token_limit if subject and subject.limits else '' }}">
+    </label>
+    <label>Monthly Image Limit
+      <input type="number" name="monthly_image_limit" value="{{ subject.limits.monthly_image_limit if subject and subject.limits else '' }}">
+    </label>
+    {% if subject %}
+    <label>
+      <input type="checkbox" name="is_active" {% if subject.is_active %}checked{% endif %}>
+      Active
+    </label>
+    {% endif %}
+    <button type="submit">Save</button>
+    <a role="button" class="secondary" href="{{ url_for('subjects_view') }}">Cancel</a>
+  </form>
+</section>
+{% endblock %}
