@@ -8,6 +8,7 @@
 - **Data & Tooling**: Introduced SQLAlchemy 2 models, SQLite migrations, configuration helpers, bootstrap scripts, and minimal Jinja templates to support the new management workflow.
 
 
+
 ## Running the Stack
 
 1. **Create and activate a Python environment.**
@@ -23,9 +24,9 @@
 
 3. **Configure application secrets and database encryption.**
    * Edit `config/app.ini` and set:
-     * `flask.secret_key` to a long random string.
-     * `database.url` to the location for your SQLCipher-backed SQLite database (for example, `sqlite:///data/openshapes.db`).
-     * `database.encryption_key` to a strong passphrase. This key unlocks the encrypted database—store it securely and keep backups.
+      `flask.secret_key` to a long random string.
+      `database.url` to the location for your SQLCipher-backed SQLite database (for example, `sqlite:///data/openshapes.db`).
+      `database.encryption_key` to a strong passphrase. This key unlocks the encrypted database—store it securely and keep backups.
    * The stack relies on SQLCipher for encryption via the `sqlcipher3-binary` wheel. Ensure the package is installed (see `requirements.txt`).
 
 4. **Bootstrap the first superadmin account.**
@@ -47,6 +48,8 @@
    * Create Subjects in the web panel to generate opaque IDs and HMAC secrets.
    * Include `X-Subject-ID` and `X-Signature` headers when calling `/v1/chat/completions` and `/v1/images/generations`. Only bot responses and usage counters are persisted; user prompts are never stored.
 
+
+=======
 
 ## An Open-Source Alternative to AI Characters
 

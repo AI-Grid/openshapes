@@ -9,6 +9,12 @@ from typing import Optional
 from flask_login import UserMixin
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, create_engine, event, func
 from sqlalchemy.engine import make_url
+
+from typing import Optional
+
+from flask_login import UserMixin
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, create_engine, func
+
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, scoped_session, sessionmaker
 
 
@@ -125,6 +131,7 @@ class UsageCounter:
         return {"tokens": total_tokens, "images": total_images}
 
 
+
 def create_session_factory(database_url: str, encryption_key: Optional[str] = None):
     url = make_url(database_url)
 
@@ -164,6 +171,9 @@ def create_session_factory(database_url: str, encryption_key: Optional[str] = No
                 raise RuntimeError(
                     "Database encryption requires SQLCipher; update database.url to use SQLite and install sqlcipher3-binary."
                 )
+
+def create_session_factory(database_url: str):
+    engine = create_engine(database_url, echo=False, future=True)
 
     Base.metadata.create_all(engine)
     return scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
