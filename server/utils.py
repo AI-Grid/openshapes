@@ -173,6 +173,21 @@ def dump_json(path: Path, data: Dict[str, object]) -> None:
 def month_key(dt) -> Tuple[int, int]:
     return dt.year, dt.month
 
+def parse_non_negative_int(value: Optional[str]) -> Tuple[bool, int]:
+    """Parse integer form fields while rejecting negative or invalid values."""
+
+    if value is None:
+        return True, 0
+    stripped = value.strip()
+    if stripped == "":
+        return True, 0
+    try:
+        parsed = int(stripped)
+    except (TypeError, ValueError):
+        return False, 0
+    if parsed < 0:
+        return False, 0
+    return True, parsed
 
 __all__ = [
     "ConfigLoader",
@@ -184,4 +199,5 @@ __all__ = [
     "load_json",
     "dump_json",
     "MemoryEntry",
+    "parse_non_negative_int",
 ]

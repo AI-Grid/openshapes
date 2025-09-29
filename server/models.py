@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 import datetime as dt
+from pathlib import Path
+from typing import Optional
+
+from flask_login import UserMixin
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, create_engine, event, func
+from sqlalchemy.engine import make_url
+
 from typing import Optional
 
 from flask_login import UserMixin
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, Text, create_engine, func
+
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, scoped_session, sessionmaker
 
 
@@ -123,8 +131,50 @@ class UsageCounter:
         return {"tokens": total_tokens, "images": total_images}
 
 
+
+def create_session_factory(database_url: str, encryption_key: Optional[str] = None):
+    url = make_url(database_url)
+
+    if url.get_backend_name() == "sqlite" and encryption_key:
+        try:
+            from sqlcipher3 import dbapi2 as sqlcipher  # type: ignore[import-not-found]
+        except ModuleNotFoundError as exc:  # pragma: no cover - import guard
+            raise RuntimeError(
+                "sqlcipher3 is required for encrypted SQLite databases. Install sqlcipher3-binary."
+            ) from exc
+
+        db_path = url.database or ":memory:"
+        db_file = Path(db_path)
+        if db_file.name != ":memory:":
+            db_file.parent.mkdir(parents=True, exist_ok=True)
+
+        def _connect():
+            connection = sqlcipher.connect(str(db_file))
+            connection.execute("PRAGMA key = ?", (encryption_key,))
+            connection.execute("PRAGMA cipher_memory_security = ON")
+            connection.execute("PRAGMA foreign_keys = ON")
+            return connection
+
+        engine = create_engine("sqlite://", creator=_connect, echo=False, future=True)
+    else:
+        engine = create_engine(database_url, echo=False, future=True)
+
+        if url.get_backend_name() == "sqlite":
+
+            @event.listens_for(engine, "connect")
+            def _sqlite_on_connect(dbapi_connection, connection_record):  # pragma: no cover - side effect
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA foreign_keys = ON")
+                cursor.close()
+
+            if encryption_key:
+                raise RuntimeError(
+                    "Database encryption requires SQLCipher; update database.url to use SQLite and install sqlcipher3-binary."
+                )
+
 def create_session_factory(database_url: str):
     engine = create_engine(database_url, echo=False, future=True)
+
     Base.metadata.create_all(engine)
     return scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
 

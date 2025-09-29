@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+
+import datetime as dt
 import logging
 import multiprocessing as mp
 import os
@@ -38,6 +40,9 @@ def _agent_worker(agent_id: int, name: str, vector_path: str, discord_token: str
     async def on_message(message: discord.Message):
         if message.author.bot:
             return
+
+        timestamp = dt.datetime.utcnow().isoformat()
+        store.add(f"Message received from {message.author.id} at {timestamp}")
         store.add(message.content)
         await message.channel.send(f"{name} received your message!")
 

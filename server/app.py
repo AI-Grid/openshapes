@@ -7,6 +7,10 @@ import json
 import time
 import uuid
 from pathlib import Path
+
+from types import SimpleNamespace
+
+
 from typing import Optional
 
 from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, url_for
@@ -25,6 +29,15 @@ from .models import (
     create_session_factory,
 )
 from .proc import AgentRuntimeManager
+
+from .utils import (
+    ConfigLoader,
+    SimpleVectorStore,
+    generate_api_key,
+    parse_non_negative_int,
+    verify_signature,
+)
+
 from .utils import ConfigLoader, SimpleVectorStore, generate_api_key, verify_signature
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "app.ini"
@@ -40,8 +53,14 @@ def create_app(config_path: Optional[Path] = None) -> Flask:
     app.config["CONFIG_PATH"] = config_path
 
     database_url = config_loader.get("database", "url", fallback="sqlite:///openshapes.db")
+    encryption_key = config_loader.get("database", "encryption_key", fallback="").strip() or None
+    session_factory = create_session_factory(database_url, encryption_key=encryption_key)
+    app.session_factory = session_factory  # type: ignore[attr-defined]
+    app.config["DB_ENCRYPTION_KEY"] = encryption_key
+
     session_factory = create_session_factory(database_url)
     app.session_factory = session_factory  # type: ignore[attr-defined]
+
 
     login_manager = LoginManager(app)
     login_manager.login_view = "login"
@@ -309,6 +328,23 @@ def create_app(config_path: Optional[Path] = None) -> Flask:
             name = request.form["name"].strip()
             opaque_id = request.form["opaque_id"].strip()
             hmac_secret = request.form.get("hmac_secret") or generate_api_key()[:32]
+            tokens_ok, token_limit = parse_non_negative_int(request.form.get("monthly_token_limit"))
+            images_ok, image_limit = parse_non_negative_int(request.form.get("monthly_image_limit"))
+            if not tokens_ok or not images_ok:
+                flash("Monthly limits must be non-negative integers", "danger")
+                limits = SimpleNamespace(
+                    monthly_token_limit=request.form.get("monthly_token_limit", ""),
+                    monthly_image_limit=request.form.get("monthly_image_limit", ""),
+                )
+                form_subject = SimpleNamespace(
+                    name=name,
+                    opaque_id=opaque_id,
+                    hmac_secret=request.form.get("hmac_secret"),
+                    limits=limits,
+                    is_active=True,
+                )
+                return render_template("subject_form.html", subject=form_subject)
+
             token_limit = int(request.form.get("monthly_token_limit") or 0)
             image_limit = int(request.form.get("monthly_image_limit") or 0)
             subject = Subject(name=name, opaque_id=opaque_id, hmac_secret=hmac_secret)
@@ -334,12 +370,39 @@ def create_app(config_path: Optional[Path] = None) -> Flask:
         if not subject:
             abort(404)
         if request.method == "POST":
+            name = request.form["name"].strip()
+            opaque_id = request.form["opaque_id"].strip()
+            is_active = bool(request.form.get("is_active"))
+            hmac_secret = request.form.get("hmac_secret") or subject.hmac_secret
+            tokens_ok, token_limit = parse_non_negative_int(request.form.get("monthly_token_limit"))
+            images_ok, image_limit = parse_non_negative_int(request.form.get("monthly_image_limit"))
+            if not tokens_ok or not images_ok:
+                flash("Monthly limits must be non-negative integers", "danger")
+                limits = SimpleNamespace(
+                    monthly_token_limit=request.form.get("monthly_token_limit", ""),
+                    monthly_image_limit=request.form.get("monthly_image_limit", ""),
+                )
+                form_subject = SimpleNamespace(
+                    id=subject.id,
+                    name=name,
+                    opaque_id=opaque_id,
+                    hmac_secret=hmac_secret,
+                    is_active=is_active,
+                    limits=limits,
+                )
+                return render_template("subject_form.html", subject=form_subject)
+            subject.name = name
+            subject.opaque_id = opaque_id
+            subject.hmac_secret = hmac_secret
+            subject.is_active = is_active
+
             subject.name = request.form["name"].strip()
             subject.opaque_id = request.form["opaque_id"].strip()
             subject.hmac_secret = request.form.get("hmac_secret") or subject.hmac_secret
             subject.is_active = bool(request.form.get("is_active"))
             token_limit = int(request.form.get("monthly_token_limit") or 0)
             image_limit = int(request.form.get("monthly_image_limit") or 0)
+
             if subject.limits is None and (token_limit or image_limit):
                 subject.limits = SubjectLimit(
                     monthly_token_limit=token_limit,
@@ -493,7 +556,14 @@ def create_app(config_path: Optional[Path] = None) -> Flask:
     def chat_completions():
         body = request.get_data(cache=False)
         subject = get_subject_for_request(body)
+
+        try:
+            payload = json.loads(body or b"{}")
+        except json.JSONDecodeError:
+            abort(400, description="Invalid JSON payload")
+
         payload = json.loads(body or b"{}")
+
         agent_id = payload.get("agent_id")
         agent_config, agent_entry = agent_for_id(agent_id)
         store = agent_vector_store(agent_config)
@@ -528,8 +598,20 @@ def create_app(config_path: Optional[Path] = None) -> Flask:
     def image_generations():
         body = request.get_data(cache=False)
         subject = get_subject_for_request(body)
+
+        try:
+            payload = json.loads(body or b"{}")
+        except json.JSONDecodeError:
+            abort(400, description="Invalid JSON payload")
+        try:
+            n = int(payload.get("n", 1))
+        except (TypeError, ValueError):
+            abort(400, description="`n` must be an integer")
+        if n <= 0:
+            abort(400, description="`n` must be a positive integer")
         payload = json.loads(body or b"{}")
         n = int(payload.get("n", 1))
+
         agent_ref = None
         if payload.get("agent_id"):
             agent_config, agent_entry = agent_for_id(payload.get("agent_id"))
