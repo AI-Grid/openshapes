@@ -1,5 +1,13 @@
 # OpenShapes
 
+## Recent Enhancements
+
+- **Flask Management Server**: Added a Flask 3 web panel with authentication, dashboards, and CRUD tools for admins, agents, and subjects, including quota tracking and configuration editing.
+- **Multi-Agent Runtime**: Implemented process management utilities with Discord bot integration, vector memory per agent, and launcher scripts driven by `.ini` definitions.
+- **OpenAI-Compatible APIs**: Exposed `/v1/chat/completions` and `/v1/images/generations` endpoints with per-subject HMAC validation, token usage accounting, and configurable API credentials.
+- **Data & Tooling**: Introduced SQLAlchemy 2 models, SQLite migrations, configuration helpers, bootstrap scripts, and minimal Jinja templates to support the new management workflow.
+
+
 ## An Open-Source Alternative to AI Characters
 
 Welcome to OpenShapes, a community-driven, open-source alternative to the proprietary AI character platform shapes.inc. OpenShapes empowers you with full control over your AI companions through self-hosting or our upcoming managed service.
